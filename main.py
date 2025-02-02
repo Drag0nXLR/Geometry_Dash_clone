@@ -1,134 +1,134 @@
-# Повний код гри
+import sys
+
 import pygame
 import random
 
-# ініціалізація Pygame
+# Ініціалізація Pygame
 pygame.init()
-pygame.font.init()
+pygame.mixer.init()
 
 # Налаштування екрана
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+bg = pygame.transform.scale(pygame.image.load("dggqyse-76b77fd2-a577-44f7-b3f4-151cdec2a610.png"), (WIDTH, HEIGHT))
 pygame.display.set_caption("Geometry Dash Clone")
+jump_sound = pygame.mixer.Sound("jump-15984.mp3")
+muzon = pygame.mixer.music.load("aboard-a-aurora-game-menu-pulse-203549.mp3")
+pygame.mixer.music.play(-1)
 
-# Кольори
-WHITE = (255, 255, 255)
+# Колір
+BLACK = (0, 0, 0)
 RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-BLACK = (0,0,0)
 
 # Клас для гравця
 class Player:
     def __init__(self):
-        self.rect = pygame.Rect(100, HEIGHT - 70, 50, 50)
-        self.color = BLUE
-        self.gravity = 0.5
-        self.velocity_y = 0
-        self.is_jumping = False
+        self.image = pygame.image.load('kubik.png')  # Завантаження зображення
+        self.image = pygame.transform.scale(self.image, (30, 30))  # Зменшення розміру зображення
+        self.rect = self.image.get_rect(center=(100, HEIGHT - 60))
         self.jump_count = 0
+        self.jump_height = 10
+        self.gravity = 0.5
+        self.vel_y = 0
 
     def jump(self):
-        if self.jump_count < 3:
-            self.velocity_y = -10
-            self.is_jumping = True
+        if self.jump_count < 3:  # Три стрибки
+            self.vel_y = -self.jump_height
             self.jump_count += 1
+            jump_sound.play()
 
     def move(self):
-        self.velocity_y += self.gravity
-        self.rect.y += self.velocity_y
+        self.vel_y += self.gravity
+        self.rect.y += self.vel_y
 
-        if self.rect.y >= HEIGHT - 70:
-            self.rect.y = HEIGHT - 70
-            self.is_jumping = False
+        # Скидання стрибків при досягненні землі
+        if self.rect.y >= HEIGHT - 30:
+            self.rect.y = HEIGHT - 30
+            self.vel_y = 0
             self.jump_count = 0
-            self.velocity_y = 0
 
-    def draw(self, screen):
-        pygame.draw.rect(screen, self.color, self.rect)
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
 
 # Клас для перешкод
 class Obstacle:
-    def __init__(self, x, y, width, height, color):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.color = color
+    def __init__(self, w, h):
+        self.image = pygame.image.load("spike_by_greaterhtrae_dgqdoe4-fullview.png")
+        self.image = pygame.transform.scale(self.image, (w, h))  # Колір перешкоди
+        self.rect = self.image.get_rect(center=(WIDTH + 50, HEIGHT - 30))
 
-    def move(self, speed):
-        self.rect.x -= speed
+    def move(self):
+        self.rect.x -= 5
 
-    def draw(self, screen):
-        pygame.draw.rect(screen, self.color, self.rect)
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
 
-    def reset_position(self, x, y):
-        self.rect.x = x
-        self.rect.y = y
-
-class Platform:
-    def __init__(self, x, y, width, height, color):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.color = color
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, self.color, self.rect)
-
-# Головна гра
+# Основний цикл гри
 def main():
     clock = pygame.time.Clock()
     player = Player()
-    obstacles = []
-    platforms = []
-    number_of_obstacles = 5  # Number of obstacles
-    number_of_platforms = 3
-    for i in range(number_of_obstacles):
-        width = random.randint(30, 70)  # Random width
-        height = random.randint(50, 100)  # Random height
-        x = random.randint(800, 1200)  # Random X position
-        y = HEIGHT - height  # Y position for the obstacle
-        obstacle = Obstacle(x, y, width, height, RED)
-        obstacles.append(obstacle)
+    obstacles = [Obstacle(random.randint(50, 100), 50)]
+    game_over = False
+    score = 0
 
-        # Add platforms to the list
-    for i in range(number_of_platforms):
-        width = random.randint(100, 200)
-        height = 10
-        x = random.randint(200, 600)
-        y = random.randint(100, 400)  # Random Y position
-        platform = Platform(x, y, width, height, BLACK)
-        platforms.append(platform)
-    speed = 5
-    running = True
+    while True:
+        screen.blit(bg, (0, 0))
 
-    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
+                return
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_SPACE and not game_over:
                     player.jump()
 
-        # Рух гравця та перешкоди
-        player.move()
-        for obstacle in obstacles:
-            obstacle.move(speed)
-            if obstacle.rect.x < 0:
-                obstacle.reset_position(random.randint(800, 1200), HEIGHT - 70)
+        if not game_over:
+            # Додати нові перешкоди
+            if random.randint(1, 100) < 5:
+                obstacles.append(Obstacle(random.randint(50, 100), 50))
 
-            if player.rect.colliderect(obstacle.rect):
-                lose = pygame.font.SysFont("Arial", 78).render("You lose", True, (255, 0, 0))
-                screen.blit(lose, (300, 250))
+            # Переміщення гравця та перешкод
+            player.move()
+            for obstacle in obstacles:
+                obstacle.move()
+
+                # Перевірка колізії
+                if player.rect.colliderect(obstacle.rect):
+                    game_over = True
+
+                if obstacle.rect.x < 0:
+                    obstacles.remove(obstacle)
+                    score += 1
+
+            # Малюємо гравця та перешкоди
+            player.draw(screen)
+            for obstacle in obstacles:
+                obstacle.draw(screen)
+
+            font = pygame.font.Font(None, 36)
+            score_text = font.render(f"Score: {score}", True, BLACK)
+            screen.blit(score_text, (10, 10))
+
+            if score >= 10:
+                font = pygame.font.Font(None, 74)
+                text = font.render("You won!", True, (0, 0, 0))
+                text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+                screen.blit(text, text_rect)
                 pygame.display.flip()
-                pygame.time.delay(1000)
-                running = False
+                pygame.time.delay(2000)
+                sys.exit()
+        else:
+            # Виведення повідомлення про гру
+            font = pygame.font.Font(None, 74)
+            text = font.render("Game Over", True, (0, 0, 0))
+            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+            screen.blit(text, text_rect)
+            pygame.display.flip()
+            pygame.time.delay(2000)
+            sys.exit()
 
-        # Малювання
-        screen.fill(WHITE)
-        player.draw(screen)
-        for obstacle in obstacles:
-            obstacle.draw(screen)
         pygame.display.flip()
         clock.tick(60)
 
-    pygame.quit()
-
-# Запуск гри
 if __name__ == "__main__":
     main()
