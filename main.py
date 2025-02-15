@@ -12,7 +12,6 @@ WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 bg = pygame.transform.scale(pygame.image.load("dggqyse-76b77fd2-a577-44f7-b3f4-151cdec2a610.png"), (WIDTH, HEIGHT))
 pygame.display.set_caption("Geometry Dash Clone")
-pygame.display.set_icon(pygame.image.load("h1.png"))
 jump_sound = pygame.mixer.Sound("jump-15984.mp3")
 muzon = pygame.mixer.music.load("aboard-a-aurora-game-menu-pulse-203549.mp3")
 pygame.mixer.music.play(-1)
@@ -110,7 +109,7 @@ def main():
             score_text = font.render(f"Score: {score}", True, BLACK)
             screen.blit(score_text, (10, 10))
 
-            if score >= 3:
+            if score >= 200:
                 font = pygame.font.Font(None, 74)
                 text = font.render("You won!", True, (0, 0, 0))
                 text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
